@@ -47,6 +47,7 @@ int main()
 	sf::Event event;
 	sf::RenderWindow window({ 800,800 }, "mandelbrot");
 
+	sf::Texture texture;
 
 	sf::Image image;
 	image.create(window.getSize().x, window.getSize().y, sf::Color::Black);
@@ -92,7 +93,6 @@ int main()
 					}
 					th.~thread();
 				}
-				sf::Texture texture;
 				texture.loadFromImage(image);
 				sf::Sprite screen(texture);
 
@@ -102,7 +102,6 @@ int main()
 			
 			
 		}
-		sf::Texture texture;
 		texture.loadFromImage(image);
 		sf::Sprite screen(texture);
 
