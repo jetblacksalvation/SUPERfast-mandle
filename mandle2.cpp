@@ -3,36 +3,44 @@
 
 #include <iostream>
 #include <complex>
+#include<thread>
 #include <SFML/Graphics.hpp>
 
 using _Complex = std::complex<double>;
+using _Threads = std::vector<std::thread>;
 
 _Complex ret_mandel(_Complex val1, _Complex val2) {
 	
-	return pow(val1,2) +val2;
+	return (val1*val1) + val2;
 };
-
-void mapvals(int xstart, int ystart, double scale, sf::Image& image) {
+void _th_calc(int xstart,int skip, int ystart,int pixels, double scale, sf::Image& image) {
 	//initialize s_buffer with the number of iterations per pixel
 	_Complex z = { 0,0 };
 	int iters = 0;
-	for (int x = xstart; x < xstart+800 ; x++) {
-		for (int y = ystart; y < ystart+800 ; y++) {
+	for (int x = xstart ; x < xstart + pixels; x++) {
+		for (int y = ystart; y < ystart + 800; y++) {
 			z = { 0,0 };
 			for (iters = 0; iters < 1000 and abs(z) < 2; iters++) {
 				z = ret_mandel(z, { (double(x) / 800) / scale, (double(y) / 800) / scale });
 
 			}
-			
-			image.setPixel(x - xstart, y - ystart, sf::Color(iters * 6, iters * 8, iters * 16));
+			image.setPixel(x -xstart +skip, y - ystart, sf::Color(iters * 6, iters * 8, iters * 16));
 		}
 	}
 	puts("done");
 	return;
-	
+
 }
-
-
+_Threads thread_Draw(int divisions, int x_start, int y_start, double scale, sf::Image& window) {//returns a vector of threads
+	_Threads threads;
+	int partitions = 800 / divisions;
+	std::cout << partitions << " is divisions\n";
+	for (int x = 0; x < divisions; x++) {
+		//call calculator function
+		threads.emplace_back(_th_calc, x_start +(partitions)*x, (partitions)*x, y_start, partitions, scale, std::ref(window));//emplace need a referance wrapper for somereason 
+	}
+	return threads;
+};
 
 int main()
 {
@@ -42,7 +50,15 @@ int main()
 
 	sf::Image image;
 	image.create(window.getSize().x, window.getSize().y, sf::Color::Black);
-	mapvals(-400, -400, .1, image);
+	//mapvals(-400, -400, .1, image);
+	
+	for (auto& th : thread_Draw(4, -400, -400, .1, image)) {
+		if (th.joinable()) {
+			th.join(); //wait for threads to exit before continuing. without this it crashes.
+		}
+		th.~thread();
+	}
+
 	sf::Texture texture;
 	texture.loadFromImage(image);
 	sf::Sprite screen(texture);
