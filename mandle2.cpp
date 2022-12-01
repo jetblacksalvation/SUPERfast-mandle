@@ -1,21 +1,26 @@
-// mandle2.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
+
 
 #include <iostream>
 #include <complex>
-#include<thread>
+#include <thread>
 #include <SFML/Graphics.hpp>
 
-using _Complex = std::complex<double>;
+
+//bash compile 
+//g++ mandel.cpp  -lsfml-graphics -lsfml-window -lsfml-system && ./a.out
+
+using __Complex = std::complex<double>;//_Commplex is already used in this implementation of c++. so i added an extra _ :P
 using _Threads = std::vector<std::thread>;
 _Threads global_threads;//so that i dont have to initialize/ allocate memory every time i use _Threads. 
-_Complex ret_mandel(_Complex val1, _Complex val2) {
+__Complex ret_mandel(__Complex val1, __Complex val2) {
 	
 	return (val1*val1) + val2;
 };
 void _th_calc(int xstart,int skip, int ystart,int pixels, double scale, int stop, sf::Image& image) {
-	//initialize s_buffer with the number of iterations per pixel
-	_Complex z = { 0,0 };
+	//initialize screen buffer with the number of iterations per pixel if i already know that the position has exited the mandelbrot set, 
+    //i shouldn't calculate it, so im thinking of storing "illegal" arguements of this function in a global array( or passing that array directly)
+    //and checking for if pixel args == current args, than pass on execution .
+	__Complex z = { 0,0 };
 	double size = image.getSize().x;
 	int iters = 0;
 	for (int x = xstart ; x < xstart + pixels; x++) {
@@ -28,8 +33,7 @@ void _th_calc(int xstart,int skip, int ystart,int pixels, double scale, int stop
 					break;
 				}
 			}
-			if (iters == stop - 1) {
-				image.setPixel(x - xstart + skip, y - ystart, sf::Color::Black);
+			if (iters == stop - 1) {//i could use a goto statement here, but they are EVIL. 
 			}
 			else{
 				image.setPixel(x - xstart + skip, y - ystart, sf::Color(iters * 6, iters * 8, iters * 16));
@@ -62,7 +66,7 @@ int main()
 	sf::Sprite screen(texture);
 	double scale = .1;
 	for (int x = 1; x < 40; x++) {
-		thread_Draw(16, -400, -400, .1,x, image);
+		thread_Draw(12, -400, -400, .1,x, image);
 
 		for (auto& th : global_threads) {
 			if (th.joinable()) {
@@ -101,16 +105,22 @@ int main()
 				image.create(window.getSize().x, window.getSize().y, sf::Color::Black);
 
 				pos = sf::Mouse::getPosition(window);
-				//std::cout << " x = " << pos.x << " y = " << pos.y << std::endl;
-				//system("pause");
-				for (int x = 1; x < 100; x++) {
-					thread_Draw(16, -400 + (pos.x-400) * scale, -400 + (pos.y - 400) * scale, scale,x, image);
+				for (int x = 1; x < 50; x++) {
+					thread_Draw(12, -400 + (pos.x-400) * scale, -400 + (pos.y - 400) * scale, scale,x, image);
 					for (auto& th : global_threads) {
 						if (th.joinable()) {
 							th.join(); //wait for threads to exit before continuing. without this it crashes.
 						}
 						th.~thread();
 					}
+                    while (window.pollEvent(event)) {
+                        //ubuntu is much more picky whenever the window doesn't respond
+                        //so polling events here is fine
+                        if (event.type == event.Closed) {
+                            window.close();
+                            exit(0);
+                        }
+                    }
 					texture.loadFromImage(image);
 					sf::Sprite screen(texture);
 
