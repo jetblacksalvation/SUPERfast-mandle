@@ -24,9 +24,7 @@ bool escaped_pixel[800][800];
 
 void clear_pix_arr(void) {
     for (int x = 0; x < 800; x++) {
-        for (int y = 0; y < 800; y++) {
-            escaped_pixel[x][y] = false;
-        }
+        memset(escaped_pixel[x], false, 800);
     }
 }
 
@@ -58,7 +56,7 @@ void _th_calc(int xstart, int skip, int ystart, int pixels, double scale, int st
                 z = { 0,0 };
                 for (iters = 0; iters < stop and abs(z) < 2; iters++) {
                     z = ret_mandel(z, { (double(x) / (double)size) / (double)scale, (double(y) / (double)size) / (double)scale });
-                    if (iters == stop - 1) {
+                    if (abs(z) >2) {
                         mtx.lock();
                         escaped_pixel[x - xstart][y - ystart] = true;
 
@@ -107,7 +105,7 @@ int main()
     sf::Sprite screen(texture);
     double scale = .1;
     start = std::chrono::system_clock::now();
-    for (int x = 1; x < 80; x++) {
+    for (int x = 1; x < 20; x++) {
         thread_Draw(12, -400, -400, .1, x, image);
 
         for (auto& th : global_threads) {
@@ -117,10 +115,11 @@ int main()
             th.~thread();
         }
 
-        clear_pix_arr();
         window.draw(screen);
         window.display();
     }
+    clear_pix_arr();
+
     end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
     std::time_t end_time = std::chrono::system_clock::to_time_t(end);
@@ -142,20 +141,20 @@ int main()
             if (event.type == sf::Event::MouseWheelScrolled) {
                 if (event.mouseWheelScroll.delta > 0) { //zoom in
 
-                    scale /= 2;
+                    scale *= 2;
 
                 }
                 else if (event.mouseWheelScroll.delta < 0) { //zoom out, why would you ever want to?
+                    scale /= 2;
 
 
-                    scale *= 2;
                 }
                 image.create(window.getSize().x, window.getSize().y, sf::Color::Black);
 
                 pos = sf::Mouse::getPosition(window);
                 start = std::chrono::system_clock::now();
-                for (int x = 1; x < 100; x++) {
-                    thread_Draw(12, -400 + (pos.x - 400) * scale, -400 + (pos.y - 400) * scale, scale, x, image);
+                for (int x = 1; x < scale/0.05 ; x++) {
+                    thread_Draw(12,  (pos.x - 400) * scale,  (pos.y - 400) * scale, scale, x, image);
                     for (auto& th : global_threads) {
                         if (th.joinable()) {
                             th.join(); //wait for threads to exit before continuing. without this it crashes.
@@ -170,7 +169,6 @@ int main()
                             exit(0);
                         }
                     }
-                    clear_pix_arr();
 
                     texture.loadFromImage(image);
                     sf::Sprite screen(texture);
@@ -178,11 +176,12 @@ int main()
                     window.draw(screen);
                     window.display();
                 }
+                clear_pix_arr();
+
                 end = std::chrono::system_clock::now();
                 elapsed_seconds = end - start;
                 end_time = std::chrono::system_clock::to_time_t(end);
-                std::cout << "finished computation at " << end_time
-                    << " milliseconds\nelapsed time: " << elapsed_seconds.count() << "s\n";
+                std::cout << "nelapsed time : " << elapsed_seconds.count() << "s\n";
 
             }
 
