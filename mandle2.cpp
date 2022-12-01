@@ -4,11 +4,15 @@
 #include <complex>
 #include <string.h>
 #include <thread>
+#include <chrono>
 #include <SFML/Graphics.hpp>
 #include <mutex>
+#include <ctime>
 
 //bash compile 
 //g++ mandel.cpp  -lsfml-graphics -lsfml-window -lsfml-system && ./a.out
+std::chrono::time_point<std::chrono::system_clock> start, end;
+
 std::mutex mtx;
 using __Complex = std::complex<double>;//_Commplex is already used in this implementation of c++. so i added an extra _ :P
 using _Threads = std::vector<std::thread>;
@@ -79,7 +83,7 @@ void _th_calc(int xstart, int skip, int ystart, int pixels, double scale, int st
 
 }
 void thread_Draw(int divisions, int x_start, int y_start, double scale, int iters, sf::Image& window) {//returns a vector of threads
-
+    
     int partitions = window.getSize().x / divisions;//doesnt matter much tbh
     for (int x = 0; x < divisions; x++) {
         //call calculator function
@@ -102,6 +106,7 @@ int main()
     texture.loadFromImage(image);
     sf::Sprite screen(texture);
     double scale = .1;
+    start = std::chrono::system_clock::now();
     for (int x = 1; x < 80; x++) {
         thread_Draw(12, -400, -400, .1, x, image);
 
@@ -116,6 +121,12 @@ int main()
         window.draw(screen);
         window.display();
     }
+    end = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end - start;
+    std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+    std::cout << "finished computation at " << end_time
+        << " milliseconds\nelapsed time: " << elapsed_seconds.count() << "s\n";
+
     sf::Vector2i pos;
 
     while (window.isOpen())
@@ -142,7 +153,8 @@ int main()
                 image.create(window.getSize().x, window.getSize().y, sf::Color::Black);
 
                 pos = sf::Mouse::getPosition(window);
-                for (int x = 1; x < 50; x++) {
+                start = std::chrono::system_clock::now();
+                for (int x = 1; x < 100; x++) {
                     thread_Draw(12, -400 + (pos.x - 400) * scale, -400 + (pos.y - 400) * scale, scale, x, image);
                     for (auto& th : global_threads) {
                         if (th.joinable()) {
@@ -166,6 +178,12 @@ int main()
                     window.draw(screen);
                     window.display();
                 }
+                end = std::chrono::system_clock::now();
+                elapsed_seconds = end - start;
+                end_time = std::chrono::system_clock::to_time_t(end);
+                std::cout << "finished computation at " << end_time
+                    << " milliseconds\nelapsed time: " << elapsed_seconds.count() << "s\n";
+
             }
 
 
